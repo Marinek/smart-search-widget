@@ -102,7 +102,7 @@ export const SmartSearch = ({
   const [results, setResults] = useState<SearchItem[]>([]);
   const [resolved, setResolved] = useState<SearchItem | null>(null);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [ambiguous, setAmbiguous] = useState(false);
 
   // Refs to avoid stale state inside async callbacks (TAB race condition).
@@ -120,7 +120,6 @@ export const SmartSearch = ({
         setResults([]);
         setResolved(null);
         setAmbiguous(false);
-        setOpen(false);
         onResult?.(null, "");
         return null;
       }
@@ -136,7 +135,6 @@ export const SmartSearch = ({
         const match = resolveMatch(q, res);
         setResolved(match);
         setAmbiguous(res.length > 0 && !match);
-        setOpen(res.length > 0 && !match);
         onResult?.(match, q);
         return match;
       } finally {
