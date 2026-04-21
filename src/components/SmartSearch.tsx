@@ -223,7 +223,7 @@ export const SmartSearch = ({
         )}
       </div>
 
-      {open && ambiguous && results.length > 0 && (
+      {focused && ambiguous && results.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
           <div className="px-2 py-1 text-xs text-muted-foreground">
             Mehrere Treffer – bitte auswählen
