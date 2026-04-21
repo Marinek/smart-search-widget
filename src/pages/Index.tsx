@@ -1,13 +1,13 @@
 import { useState } from "react";
 import SmartSearch, { SearchItem } from "@/components/SmartSearch";
-import MultiSmartSearch from "@/components/MultiSmartSearch";
+import MultiSmartSearch, { ListItem } from "@/components/MultiSmartSearch";
 
 const Index = () => {
   const [result, setResult] = useState<{ item: SearchItem | null; query: string }>({
     item: null,
     query: "",
   });
-  const [multi, setMulti] = useState<SearchItem[]>([]);
+  const [multi, setMulti] = useState<ListItem[]>([]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
