@@ -98,13 +98,13 @@ function resolveMatch(query: string, results: SearchItem[]): SearchItem | null {
   return null;
 }
 
-export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(({
+export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(function SmartSearch({
   onResult,
   onSearch = defaultSearch,
   placeholder = "Search…",
   debounceMs = 300,
   className,
-}, ref) => {
+}, ref) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
   const [resolved, setResolved] = useState<SearchItem | null>(null);
