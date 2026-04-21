@@ -20,6 +20,10 @@ export type SmartSearchHandle = {
   reset: () => void;
   /** Focus the underlying input. */
   focus: () => void;
+  /** Read the current trimmed input value synchronously. */
+  getQuery: () => string;
+  /** Trigger an immediate search (bypassing the debounce) and return the resolution. */
+  searchNow: () => Promise<{ match: SearchItem | null; results: SearchItem[]; query: string }>;
 };
 
 /* --- Mock REST endpoint ----------------------------------------------------
@@ -130,6 +134,28 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
       setLoading(false);
     },
     focus: () => inputRef.current?.focus(),
+    getQuery: () => (inputRef.current?.value ?? "").trim(),
+    searchNow: async () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      const raw = (inputRef.current?.value ?? "").trim();
+      if (!raw) return { match: null, results: [], query: "" };
+      const reqId = ++requestIdRef.current;
+      setLoading(true);
+      try {
+        const res = await onSearch(raw);
+        if (reqId !== requestIdRef.current) {
+          return { match: null, results: [], query: raw };
+        }
+        setResults(res);
+        const match = resolveMatch(raw, res);
+        setResolved(match);
+        setAmbiguous(res.length > 0 && !match);
+        onResult?.(match, raw);
+        return { match, results: res, query: raw };
+      } finally {
+        if (reqId === requestIdRef.current) setLoading(false);
+      }
+    },
   }));
 
   /** Core search routine. Always uses the latest query, ignores stale responses. */
