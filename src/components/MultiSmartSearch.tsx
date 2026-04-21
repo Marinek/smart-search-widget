@@ -73,9 +73,9 @@ export const MultiSmartSearch = ({
             if (prev.some((p) => p.key === match.key && p.key !== chipId)) {
               return it; // keep as-is, the filter below will remove it
             }
-            return { ...it, key: match.key, label: match.label, status: "resolved" };
+            return { ...it, key: match.key, label: match.label, status: "resolved" as const };
           }
-          return { ...it, status: res.length > 1 ? "ambiguous" : "pending" };
+          return { ...it, status: (res.length > 1 ? "ambiguous" : "pending") as PendingItem["status"] };
         }).filter((it, idx, arr) => {
           // Drop pending chip if its resolved key duplicates a real chip.
           if (it.key !== chipId) return true;
