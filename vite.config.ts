@@ -13,10 +13,30 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  define: {
+    "process.env.NODE_ENV": JSON.stringify(mode),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
+  },
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, "src/widget-entry.tsx"),
+      name: "SmartWidget",
+      fileName: (format) => `smart-widget.${format}.js`,
+      formats: ["es", "umd"],
+    },
+    rollupOptions: {
+      external: mode === "production" ? [] : ["react", "react-dom"], // Usually we want to bundle everything for a widget
+      output: {
+        globals: {
+          react: "React",
+          "react-dom": "ReactDOM",
+        },
+      },
+    },
   },
 }));
