@@ -20,16 +20,40 @@ export type SmartSearchProps = {
  * even single characters (e.g. "G") and return a list of {key,label} items.
  * -------------------------------------------------------------------------- */
 const MOCK_DATA: SearchItem[] = [
-  { key: "DE", label: "Germany" },
-  { key: "GB", label: "Great Britain" },
-  { key: "GR", label: "Greece" },
+  // D – mehrere Treffer
+  { key: "DE", label: "Deutschland" },
+  { key: "DK", label: "Dänemark" },
+  { key: "DO", label: "Dominikanische Republik" },
+  { key: "DZ", label: "Demokratische Volksrepublik Algerien" },
+  { key: "DJ", label: "Dschibuti" },
+  { key: "DM", label: "Dominica" },
+  // G – mehrere Treffer
+  { key: "GB", label: "Großbritannien" },
+  { key: "GR", label: "Griechenland" },
   { key: "GH", label: "Ghana" },
-  { key: "GE", label: "Georgia" },
-  { key: "FR", label: "France" },
-  { key: "ES", label: "Spain" },
-  { key: "IT", label: "Italy" },
+  { key: "GE", label: "Georgien" },
+  { key: "GT", label: "Guatemala" },
+  { key: "GQ", label: "Äquatorialguinea" },
   { key: "G7", label: "G7" },
   { key: "G20", label: "G20" },
+  // weitere
+  { key: "FR", label: "Frankreich" },
+  { key: "ES", label: "Spanien" },
+  { key: "IT", label: "Italien" },
+  { key: "AT", label: "Österreich" },
+  { key: "CH", label: "Schweiz" },
+  { key: "NL", label: "Niederlande" },
+  { key: "BE", label: "Belgien" },
+  { key: "LU", label: "Luxemburg" },
+  { key: "PL", label: "Polen" },
+  { key: "PT", label: "Portugal" },
+  { key: "SE", label: "Schweden" },
+  { key: "NO", label: "Norwegen" },
+  { key: "FI", label: "Finnland" },
+  { key: "IS", label: "Island" },
+  { key: "IE", label: "Irland" },
+  { key: "US", label: "Vereinigte Staaten von Amerika" },
+  { key: "GB-SCT", label: "Vereinigtes Königreich Schottland" },
 ];
 
 async function defaultSearch(query: string): Promise<SearchItem[]> {
