@@ -1,7 +1,7 @@
-import { useState, KeyboardEvent } from "react";
+import { useRef, useState, KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import SmartSearch, { SearchItem, SmartSearchProps } from "./SmartSearch";
+import SmartSearch, { SearchItem, SmartSearchHandle, SmartSearchProps } from "./SmartSearch";
 
 export type MultiSmartSearchProps = Omit<SmartSearchProps, "onResult"> & {
   onChange?: (items: SearchItem[]) => void;
@@ -21,12 +21,11 @@ export const MultiSmartSearch = ({
   ...searchProps
 }: MultiSmartSearchProps) => {
   const [items, setItems] = useState<SearchItem[]>(initialItems);
-  const [current, setCurrent] = useState<{ item: SearchItem | null; query: string }>({
+  const currentRef = useRef<{ item: SearchItem | null; query: string }>({
     item: null,
     query: "",
   });
-  // Bump to force-remount the inner SmartSearch and clear its internal state.
-  const [resetKey, setResetKey] = useState(0);
+  const searchRef = useRef<SmartSearchHandle>(null);
 
   const addItem = (item: SearchItem) => {
     setItems((prev) => {
@@ -35,8 +34,10 @@ export const MultiSmartSearch = ({
       onChange?.(next);
       return next;
     });
-    setCurrent({ item: null, query: "" });
-    setResetKey((k) => k + 1);
+    currentRef.current = { item: null, query: "" };
+    // Clear the input but keep focus so the user can keep adding entries.
+    searchRef.current?.reset();
+    searchRef.current?.focus();
   };
 
   const removeItem = (key: string) => {
@@ -48,9 +49,9 @@ export const MultiSmartSearch = ({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" && current.item) {
+    if (e.key === "Enter" && currentRef.current.item) {
       e.preventDefault();
-      addItem(current.item);
+      addItem(currentRef.current.item);
     }
   };
 
@@ -58,9 +59,11 @@ export const MultiSmartSearch = ({
     <div className={cn("w-full max-w-md", className)}>
       <div onKeyDown={handleKeyDown}>
         <SmartSearch
-          key={resetKey}
+          ref={searchRef}
           {...searchProps}
-          onResult={(item, query) => setCurrent({ item, query })}
+          onResult={(item, query) => {
+            currentRef.current = { item, query };
+          }}
         />
       </div>
 

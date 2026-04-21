@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Check, Loader2, Search, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,13 @@ export type SmartSearchProps = {
   placeholder?: string;
   debounceMs?: number;
   className?: string;
+};
+
+export type SmartSearchHandle = {
+  /** Clear the input, results and resolved state without unmounting. */
+  reset: () => void;
+  /** Focus the underlying input. */
+  focus: () => void;
 };
 
 /* --- Mock REST endpoint ----------------------------------------------------
@@ -91,13 +98,13 @@ function resolveMatch(query: string, results: SearchItem[]): SearchItem | null {
   return null;
 }
 
-export const SmartSearch = ({
+export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(({
   onResult,
   onSearch = defaultSearch,
   placeholder = "Search…",
   debounceMs = 300,
   className,
-}: SmartSearchProps) => {
+}, ref) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
   const [resolved, setResolved] = useState<SearchItem | null>(null);
@@ -109,6 +116,21 @@ export const SmartSearch = ({
   const latestQueryRef = useRef("");
   const requestIdRef = useRef(0);
   const debounceRef = useRef<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      requestIdRef.current++; // invalidate any in-flight request
+      latestQueryRef.current = "";
+      setQuery("");
+      setResults([]);
+      setResolved(null);
+      setAmbiguous(false);
+      setLoading(false);
+    },
+    focus: () => inputRef.current?.focus(),
+  }));
 
   /** Core search routine. Always uses the latest query, ignores stale responses. */
   const runSearch = useCallback(
@@ -191,6 +213,7 @@ export const SmartSearch = ({
       >
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -247,6 +270,7 @@ export const SmartSearch = ({
       )}
     </div>
   );
-};
+});
+SmartSearch.displayName = "SmartSearch";
 
 export default SmartSearch;
