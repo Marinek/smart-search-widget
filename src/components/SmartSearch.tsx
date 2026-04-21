@@ -102,7 +102,7 @@ export const SmartSearch = ({
   const [results, setResults] = useState<SearchItem[]>([]);
   const [resolved, setResolved] = useState<SearchItem | null>(null);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [ambiguous, setAmbiguous] = useState(false);
 
   // Refs to avoid stale state inside async callbacks (TAB race condition).
@@ -120,7 +120,6 @@ export const SmartSearch = ({
         setResults([]);
         setResolved(null);
         setAmbiguous(false);
-        setOpen(false);
         onResult?.(null, "");
         return null;
       }
@@ -136,7 +135,6 @@ export const SmartSearch = ({
         const match = resolveMatch(q, res);
         setResolved(match);
         setAmbiguous(res.length > 0 && !match);
-        setOpen(res.length > 0 && !match);
         onResult?.(match, q);
         return match;
       } finally {
@@ -177,7 +175,7 @@ export const SmartSearch = ({
   const pick = (item: SearchItem) => {
     setResolved(item);
     setAmbiguous(false);
-    setOpen(false);
+    setFocused(false);
     setQuery(item.label);
     latestQueryRef.current = item.label;
     onResult?.(item, item.label);
@@ -197,8 +195,16 @@ export const SmartSearch = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={() => results.length > 0 && !resolved && setOpen(true)}
+          onFocus={() => setFocused(true)}
+          onBlur={(e) => {
+            // Close only when focus leaves the whole widget (not when clicking
+            // an option inside the dropdown).
+            const next = e.relatedTarget as Node | null;
+            if (!next || !e.currentTarget.parentElement?.parentElement?.contains(next)) {
+              setFocused(false);
+            }
+            handleBlur();
+          }}
           placeholder={placeholder}
           autoComplete="off"
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -217,7 +223,7 @@ export const SmartSearch = ({
         )}
       </div>
 
-      {open && ambiguous && results.length > 0 && (
+      {focused && ambiguous && results.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
           <div className="px-2 py-1 text-xs text-muted-foreground">
             Mehrere Treffer – bitte auswählen
