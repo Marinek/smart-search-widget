@@ -1,7 +1,7 @@
 import { useRef, useState, KeyboardEvent } from "react";
 import { X, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import SmartSearch, { SearchItem, SmartSearchHandle, SmartSearchProps } from "./SmartSearch";
+import SmartSearch, { SearchItem, SmartSearchHandle, SmartSearchProps, defaultSearch } from "./SmartSearch";
 
 export type ListItem = SearchItem & {
   /** "pending" → background search still running. "resolved" → unique key found. "error" → no/ambiguous match. */
@@ -14,9 +14,6 @@ export type MultiSmartSearchProps = Omit<SmartSearchProps, "onResult"> & {
   onChange?: (items: ListItem[]) => void;
   initialItems?: ListItem[];
 };
-
-let chipCounter = 0;
-const nextChipId = () => `__chip_${++chipCounter}`;
 
 function resolveMatch(query: string, results: SearchItem[]): SearchItem | null {
   const q = query.trim().toLowerCase();
@@ -71,48 +68,59 @@ export const MultiSmartSearch = ({
     const raw = handle.getQuery();
     if (!raw) return;
 
-    // 1) IMMEDIATELY add a pending chip with the raw input.
-    const chipId = nextChipId();
+    // 1) Prevent immediate duplicates based on raw query or existing keys
+    const isDuplicate = itemsRef.current.some(
+      (i) => i.query.toLowerCase() === raw.toLowerCase() || i.key.toLowerCase() === raw.toLowerCase()
+    );
+    if (isDuplicate) {
+      handle.reset();
+      handle.focus();
+      return;
+    }
+
+    // 2) IMMEDIATELY add a pending chip with the raw input.
+    // Use the raw query as the key (id) for now.
+    const tempId = raw;
     commitItems((prev) => [
       ...prev,
-      { key: chipId, label: raw, status: "pending", query: raw },
+      { key: tempId, label: raw, status: "pending", query: raw },
     ]);
 
-    // 2) Clear the input but keep focus → user can type the next entry right away.
+    // 3) Clear the input but keep focus → user can type the next entry right away.
     handle.reset();
     handle.focus();
 
-    // 3) Run the search in the background.
-    const onSearch = (searchProps as SmartSearchProps).onSearch;
+    // 4) Run the search in the background.
+    const onSearch = (searchProps as SmartSearchProps).onSearch || defaultSearch;
     try {
-      const results = onSearch
-        ? await onSearch(raw)
-        : await defaultBackgroundSearch(raw);
+      const results = await onSearch(raw);
       const match = resolveMatch(raw, results);
 
       if (match) {
         // Skip duplicates: if another resolved chip already holds this key, drop the pending one.
         const dup = itemsRef.current.some(
-          (i) => i.status === "resolved" && i.key === match.key && i.key !== chipId,
+          (i) => i.status === "resolved" && i.key.toLowerCase() === match.key.toLowerCase() && i.key !== tempId
         );
+        
         if (dup) {
-          removeItem(chipId);
+          removeItem(tempId);
         } else {
-          // Replace chip id with the real key so duplicate detection works going forward.
+          // Update the pending chip with real data.
+          // Note: key might change from raw query to API key (e.g. "France" -> "FR").
           commitItems((prev) =>
             prev.map((i) =>
-              i.key === chipId
+              i.key === tempId
                 ? { ...i, key: match.key, label: match.label, status: "resolved" }
-                : i,
-            ),
+                : i
+            )
           );
         }
       } else {
         // No unique match → mark chip as error, keep raw query as label/value.
-        updateChip(chipId, { status: "error", label: raw });
+        updateChip(tempId, { status: "error" });
       }
     } catch {
-      updateChip(chipId, { status: "error", label: raw });
+      updateChip(tempId, { status: "error" });
     }
   };
 
@@ -135,19 +143,19 @@ export const MultiSmartSearch = ({
             <li
               key={item.key}
               className={cn(
-                "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors",
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-all duration-200",
                 item.status === "resolved" &&
-                  "border-border bg-secondary text-secondary-foreground",
+                  "border-border bg-secondary text-secondary-foreground shadow-sm",
                 item.status === "pending" &&
-                  "border-dashed border-border bg-muted text-muted-foreground",
+                  "animate-pulse border-blue-300 bg-blue-50 text-blue-600",
                 item.status === "error" &&
-                  "border-destructive/40 bg-destructive/10 text-destructive",
+                  "border-destructive bg-destructive text-destructive-foreground shadow-sm",
               )}
               title={
                 item.status === "pending"
-                  ? `Suche läuft für „${item.query}"…`
+                  ? `Suche läuft für „${item.query}“...`
                   : item.status === "error"
-                    ? `Kein eindeutiger Treffer für „${item.query}"`
+                    ? `Kein eindeutiger Treffer für „${item.query}“`
                     : undefined
               }
             >
@@ -155,19 +163,28 @@ export const MultiSmartSearch = ({
                 <Loader2 className="h-3 w-3 animate-spin" />
               )}
               {item.status === "error" && <AlertCircle className="h-3 w-3" />}
+              
               {item.status === "resolved" && (
-                <span className="font-medium">{item.key}</span>
+                <span className="font-bold opacity-80">{item.key}</span>
               )}
-              <span
-                className={cn(item.status === "resolved" && "text-muted-foreground")}
-              >
+              
+              <span className={cn(
+                "max-w-[150px] truncate",
+                item.status === "resolved" && "font-medium"
+              )}>
                 {item.label}
               </span>
+
               <button
                 type="button"
                 aria-label={`Entferne ${item.label}`}
                 onClick={() => removeItem(item.key)}
-                className="ml-1 rounded-sm p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
+                className={cn(
+                  "ml-0.5 rounded-full p-0.5 transition-colors",
+                  item.status === "error" 
+                    ? "hover:bg-white/20 text-white" 
+                    : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+                )}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -179,9 +196,7 @@ export const MultiSmartSearch = ({
   );
 };
 
-/** Fallback so the chip can resolve even if no onSearch was passed (uses SmartSearch's default mock). */
-async function defaultBackgroundSearch(_q: string): Promise<SearchItem[]> {
-  return [];
-}
+/** Fallback is no longer needed here as we import defaultSearch from SmartSearch. */
 
 export default MultiSmartSearch;
+

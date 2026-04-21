@@ -67,7 +67,7 @@ const MOCK_DATA: SearchItem[] = [
   { key: "GB-SCT", label: "Vereinigtes Königreich Schottland" },
 ];
 
-async function defaultSearch(query: string): Promise<SearchItem[]> {
+export async function defaultSearch(query: string): Promise<SearchItem[]> {
   // Simulate network latency
   await new Promise((r) => setTimeout(r, 2000));
   const q = query.trim().toLowerCase();
