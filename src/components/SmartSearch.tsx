@@ -69,7 +69,7 @@ const MOCK_DATA: SearchItem[] = [
 
 async function defaultSearch(query: string): Promise<SearchItem[]> {
   // Simulate network latency
-  await new Promise((r) => setTimeout(r, 250));
+  await new Promise((r) => setTimeout(r, 2000));
   const q = query.trim().toLowerCase();
   if (!q) return [];
   return MOCK_DATA.filter(
