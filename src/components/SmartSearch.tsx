@@ -20,6 +20,10 @@ export type SmartSearchHandle = {
   reset: () => void;
   /** Focus the underlying input. */
   focus: () => void;
+  /** Read the current trimmed input value synchronously. */
+  getQuery: () => string;
+  /** Trigger an immediate search (bypassing the debounce) and return the resolution. */
+  searchNow: () => Promise<{ match: SearchItem | null; results: SearchItem[]; query: string }>;
 };
 
 /* --- Mock REST endpoint ----------------------------------------------------
