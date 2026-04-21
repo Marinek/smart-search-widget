@@ -175,7 +175,7 @@ export const SmartSearch = ({
   const pick = (item: SearchItem) => {
     setResolved(item);
     setAmbiguous(false);
-    setOpen(false);
+    setFocused(false);
     setQuery(item.label);
     latestQueryRef.current = item.label;
     onResult?.(item, item.label);
@@ -195,8 +195,16 @@ export const SmartSearch = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={() => results.length > 0 && !resolved && setOpen(true)}
+          onFocus={() => setFocused(true)}
+          onBlur={(e) => {
+            // Close only when focus leaves the whole widget (not when clicking
+            // an option inside the dropdown).
+            const next = e.relatedTarget as Node | null;
+            if (!next || !e.currentTarget.parentElement?.parentElement?.contains(next)) {
+              setFocused(false);
+            }
+            handleBlur();
+          }}
           placeholder={placeholder}
           autoComplete="off"
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
