@@ -1,11 +1,13 @@
 import { useState } from "react";
 import SmartSearch, { SearchItem } from "@/components/SmartSearch";
+import MultiSmartSearch from "@/components/MultiSmartSearch";
 
 const Index = () => {
   const [result, setResult] = useState<{ item: SearchItem | null; query: string }>({
     item: null,
     query: "",
   });
+  const [multi, setMulti] = useState<SearchItem[]>([]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -29,6 +31,22 @@ const Index = () => {
           placeholder="Nächstes Feld (TAB-Ziel)"
           className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
         />
+
+        <section className="space-y-2">
+          <h2 className="text-lg font-medium">Multi-Select Variante</h2>
+          <p className="text-sm text-muted-foreground">
+            Gleiches Verhalten wie oben. Zusätzlich: <kbd className="rounded border border-border bg-muted px-1 text-xs">Enter</kbd> fügt den aufgelösten Treffer als Chip hinzu.
+          </p>
+          <MultiSmartSearch
+            placeholder="Mehrere Länder auswählen…"
+            onChange={setMulti}
+          />
+          {multi.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Ausgewählt: <span className="font-mono text-foreground">{multi.map((i) => i.key).join(", ")}</span>
+            </div>
+          )}
+        </section>
 
         <section className="rounded-md border border-border bg-card p-4 text-sm text-card-foreground">
           <div className="mb-2 font-medium">Letzter Stand</div>
