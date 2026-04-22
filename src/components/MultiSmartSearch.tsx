@@ -1,4 +1,4 @@
-import { useRef, useState, KeyboardEvent } from "react";
+import { useRef, useState, KeyboardEvent, useEffect } from "react";
 import { X, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SmartSearch, { SearchItem, SmartSearchHandle, SmartSearchProps, defaultSearch } from "./SmartSearch";
@@ -41,9 +41,14 @@ export const MultiSmartSearch = ({
 }: MultiSmartSearchProps) => {
   const [items, setItems] = useState<ListItem[]>(initialItems);
   const searchRef = useRef<SmartSearchHandle>(null);
-  // Keep latest onChange & items accessible from async callbacks.
   const itemsRef = useRef<ListItem[]>(initialItems);
   itemsRef.current = items;
+
+  // Sync internal state if initialItems prop changes (e.g. via Web Component property)
+  useEffect(() => {
+    setItems(initialItems);
+    itemsRef.current = initialItems;
+  }, [initialItems]);
 
   const commitItems = (updater: (prev: ListItem[]) => ListItem[]) => {
     setItems((prev) => {
@@ -101,7 +106,7 @@ export const MultiSmartSearch = ({
         const dup = itemsRef.current.some(
           (i) => i.status === "resolved" && i.key.toLowerCase() === match.key.toLowerCase() && i.key !== tempId
         );
-        
+
         if (dup) {
           removeItem(tempId);
         } else {
@@ -145,11 +150,11 @@ export const MultiSmartSearch = ({
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-all duration-200",
                 item.status === "resolved" &&
-                  "border-border bg-secondary text-secondary-foreground shadow-sm",
+                "border-border bg-secondary text-secondary-foreground shadow-sm",
                 item.status === "pending" &&
-                  "animate-pulse border-blue-300 bg-blue-50 text-blue-600",
+                "animate-pulse border-blue-300 bg-blue-50 text-blue-600",
                 item.status === "error" &&
-                  "border-destructive bg-destructive text-destructive-foreground shadow-sm",
+                "border-destructive bg-destructive text-destructive-foreground shadow-sm",
               )}
               title={
                 item.status === "pending"
@@ -163,11 +168,11 @@ export const MultiSmartSearch = ({
                 <Loader2 className="h-3 w-3 animate-spin" />
               )}
               {item.status === "error" && <AlertCircle className="h-3 w-3" />}
-              
+
               {item.status === "resolved" && (
                 <span className="font-bold opacity-80">{item.key}</span>
               )}
-              
+
               <span className={cn(
                 "max-w-[150px] truncate",
                 item.status === "resolved" && "font-medium"
@@ -181,8 +186,8 @@ export const MultiSmartSearch = ({
                 onClick={() => removeItem(item.key)}
                 className={cn(
                   "ml-0.5 rounded-full p-0.5 transition-colors",
-                  item.status === "error" 
-                    ? "hover:bg-white/20 text-white" 
+                  item.status === "error"
+                    ? "hover:bg-white/20 text-white"
                     : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
                 )}
               >

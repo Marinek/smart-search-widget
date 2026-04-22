@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
       formats: ["es", "umd"],
     },
     rollupOptions: {
-      external: mode === "production" ? [] : ["react", "react-dom"], // Usually we want to bundle everything for a widget
+      external: [], // Bundle everything for the standalone widget
       output: {
         globals: {
           react: "React",
