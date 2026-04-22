@@ -61,6 +61,30 @@ const Index = () => {
           />
         </section>
 
+        <section className="space-y-4 rounded-md border border-border bg-card p-6 text-sm text-card-foreground">
+          <h2 className="text-lg font-medium">Schnittstellen-Dokumentation</h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-2 font-bold uppercase tracking-wider text-muted-foreground text-[10px]">SearchItem (API Response)</h3>
+              <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs">
+{`type SearchItem = {
+  key: string;   // Eindeutiger Identifikator (z.B. "DE")
+  label: string; // Anzeigetext (z.B. "Deutschland")
+};`}
+              </pre>
+            </div>
+            <div>
+              <h3 className="mb-2 font-bold uppercase tracking-wider text-muted-foreground text-[10px]">ListItem (Multi-Select State)</h3>
+              <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs">
+{`type ListItem = SearchItem & {
+  status: "pending" | "resolved" | "error";
+  query: string; // Ursprüngliche Nutzereingabe
+};`}
+              </pre>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-md border border-border bg-card p-4 text-sm text-card-foreground">
           <div className="mb-2 font-medium">Letzter Stand</div>
           <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-muted-foreground">
