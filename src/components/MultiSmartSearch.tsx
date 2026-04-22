@@ -132,7 +132,7 @@ export const MultiSmartSearch = ({
   };
 
   return (
-    <div className={cn("w-full max-w-md", className)}>
+    <div className={cn("w-full max-w-xl", className)}>
       <div onKeyDown={handleKeyDown}>
         <SmartSearch ref={searchRef} {...searchProps} />
       </div>

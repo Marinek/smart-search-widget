@@ -1,6 +1,7 @@
 import { useState } from "react";
 import SmartSearch, { SearchItem } from "@/components/SmartSearch";
 import MultiSmartSearch, { ListItem } from "@/components/MultiSmartSearch";
+import KZLViewer from "@/components/KZLViewer";
 
 const Index = () => {
   const [result, setResult] = useState<{ item: SearchItem | null; query: string }>({
@@ -11,7 +12,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto flex max-w-2xl flex-col gap-8 px-6 py-20">
+      <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-20">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight">Smart Search Widget</h1>
           <p className="text-sm text-muted-foreground">
@@ -29,7 +30,7 @@ const Index = () => {
         <input
           type="text"
           placeholder="Nächstes Feld (TAB-Ziel)"
-          className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
+          className="w-full max-w-xl rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
         />
 
         <section className="space-y-2">
@@ -46,6 +47,18 @@ const Index = () => {
               Ausgewählt: <span className="font-mono text-foreground">{multi.map((i) => i.key).join(", ")}</span>
             </div>
           )}
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-medium">KZL Viewer (Anlagentechnik)</h2>
+          <p className="text-sm text-muted-foreground">
+            Visualisierung eines atomrechtlichen Dokumenten-Kennzeichens (KZL).
+          </p>
+          <KZLViewer 
+            kzlString="PRJ-01/B-12/PUMP/001/BG2/W/BERICHT/9999/A/1" 
+            actionLabel="Als Anhang hinzufügen"
+            onAction={(kzl) => alert(`Dokument ${kzl} wurde als Anhang hinzugefügt.`)}
+          />
         </section>
 
         <section className="rounded-md border border-border bg-card p-4 text-sm text-card-foreground">
