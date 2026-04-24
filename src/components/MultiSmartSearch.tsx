@@ -26,16 +26,14 @@ function resolveMatch(query: string, results: SearchItem[]): SearchItem | null {
   return null;
 }
 
+const EMPTY_ARRAY: any[] = [];
+
 /**
  * MultiSmartSearch wraps SmartSearch with a chip list.
- * Enter → IMMEDIATELY adds a pending chip with the raw query and clears the input
- * (focus stays). The REST search runs in the background; once it resolves, the
- * chip is updated to "resolved" (showing the API key) or "error" (red, raw query
- * preserved as value).
  */
 export const MultiSmartSearch = ({
   onChange,
-  initialItems = [],
+  initialItems = EMPTY_ARRAY,
   className,
   ...searchProps
 }: MultiSmartSearchProps) => {
@@ -46,8 +44,10 @@ export const MultiSmartSearch = ({
 
   // Sync internal state if initialItems prop changes (e.g. via Web Component property)
   useEffect(() => {
-    setItems(initialItems);
-    itemsRef.current = initialItems;
+    if (initialItems !== itemsRef.current) {
+      setItems(initialItems);
+      itemsRef.current = initialItems;
+    }
   }, [initialItems]);
 
   const commitItems = (updater: (prev: ListItem[]) => ListItem[]) => {
@@ -84,14 +84,13 @@ export const MultiSmartSearch = ({
     }
 
     // 2) IMMEDIATELY add a pending chip with the raw input.
-    // Use the raw query as the key (id) for now.
     const tempId = raw;
     commitItems((prev) => [
       ...prev,
       { key: tempId, label: raw, status: "pending", query: raw },
     ]);
 
-    // 3) Clear the input but keep focus → user can type the next entry right away.
+    // 3) Clear the input but keep focus
     handle.reset();
     handle.focus();
 
@@ -102,7 +101,6 @@ export const MultiSmartSearch = ({
       const match = resolveMatch(raw, results);
 
       if (match) {
-        // Skip duplicates: if another resolved chip already holds this key, drop the pending one.
         const dup = itemsRef.current.some(
           (i) => i.status === "resolved" && i.key.toLowerCase() === match.key.toLowerCase() && i.key !== tempId
         );
@@ -110,8 +108,6 @@ export const MultiSmartSearch = ({
         if (dup) {
           removeItem(tempId);
         } else {
-          // Update the pending chip with real data.
-          // Note: key might change from raw query to API key (e.g. "France" -> "FR").
           commitItems((prev) =>
             prev.map((i) =>
               i.key === tempId
@@ -121,7 +117,6 @@ export const MultiSmartSearch = ({
           );
         }
       } else {
-        // No unique match → mark chip as error, keep raw query as label/value.
         updateChip(tempId, { status: "error" });
       }
     } catch {
@@ -170,15 +165,18 @@ export const MultiSmartSearch = ({
               {item.status === "error" && <AlertCircle className="h-3 w-3" />}
 
               {item.status === "resolved" && (
-                <span className="font-bold opacity-80">{item.key}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">{item.key}</span>
+                  <span className="opacity-40">—</span>
+                  <span className="font-medium">{item.label}</span>
+                </div>
               )}
 
-              <span className={cn(
-                "max-w-[150px] truncate",
-                item.status === "resolved" && "font-medium"
-              )}>
-                {item.label}
-              </span>
+              {item.status !== "resolved" && (
+                <span className="max-w-[150px] truncate">
+                  {item.label}
+                </span>
+              )}
 
               <button
                 type="button"
@@ -201,7 +199,4 @@ export const MultiSmartSearch = ({
   );
 };
 
-/** Fallback is no longer needed here as we import defaultSearch from SmartSearch. */
-
 export default MultiSmartSearch;
-

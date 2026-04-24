@@ -32,31 +32,31 @@ export type SmartSearchHandle = {
  * -------------------------------------------------------------------------- */
 const MOCK_DATA: SearchItem[] = [
   // D – mehrere Treffer
-  { key: "DE", label: "Deutschland" },
-  { key: "DK", label: "Dänemark" },
-  { key: "DO", label: "Dominikanische Republik" },
-  { key: "DZ", label: "Demokratische Volksrepublik Algerien" },
-  { key: "DJ", label: "Dschibuti" },
+  { key: "DE", label: "Deutschland (Germany)" },
+  { key: "DK", label: "Dänemark (Denmark)" },
+  { key: "DO", label: "Dominikanische Republik (Dominican Republic)" },
+  { key: "DZ", label: "Demokratische Volksrepublik Algerien (Algeria)" },
+  { key: "DJ", label: "Dschibuti (Djibouti)" },
   { key: "DM", label: "Dominica" },
   // G – mehrere Treffer
-  { key: "GB", label: "Großbritannien" },
-  { key: "GR", label: "Griechenland" },
+  { key: "GB", label: "Großbritannien (United Kingdom)" },
+  { key: "GR", label: "Griechenland (Greece)" },
   { key: "GH", label: "Ghana" },
-  { key: "GE", label: "Georgien" },
+  { key: "GE", label: "Georgien (Georgia)" },
   { key: "GT", label: "Guatemala" },
   { key: "GQ", label: "Äquatorialguinea" },
   { key: "G7", label: "G7" },
   { key: "G20", label: "G20" },
   // weitere
-  { key: "FR", label: "Frankreich" },
-  { key: "ES", label: "Spanien" },
-  { key: "IT", label: "Italien" },
-  { key: "AT", label: "Österreich" },
-  { key: "CH", label: "Schweiz" },
-  { key: "NL", label: "Niederlande" },
-  { key: "BE", label: "Belgien" },
+  { key: "FR", label: "Frankreich (France)" },
+  { key: "ES", label: "Spanien (Spain)" },
+  { key: "IT", label: "Italien (Italy)" },
+  { key: "AT", label: "Österreich (Austria)" },
+  { key: "CH", label: "Schweiz (Switzerland)" },
+  { key: "NL", label: "Niederlande (Netherlands)" },
+  { key: "BE", label: "Belgien (Belgium)" },
   { key: "LU", label: "Luxemburg" },
-  { key: "PL", label: "Polen" },
+  { key: "PL", label: "Polen (Poland)" },
   { key: "PT", label: "Portugal" },
   { key: "SE", label: "Schweden" },
   { key: "NO", label: "Norwegen" },
@@ -115,6 +115,7 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
   const [ambiguous, setAmbiguous] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   // Refs to avoid stale state inside async callbacks (TAB race condition).
   const latestQueryRef = useRef("");
@@ -132,6 +133,7 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
       setResolved(null);
       setAmbiguous(false);
       setLoading(false);
+      setSelectedIndex(-1);
     },
     focus: () => inputRef.current?.focus(),
     getQuery: () => (inputRef.current?.value ?? "").trim(),
@@ -204,13 +206,30 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, debounceMs]);
 
-  /** TAB / Blur: ensure the latest input is processed before focus leaves. */
+  /** Reset selectedIndex when results change. */
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [results]);
+
+  /** Keyboard handling: ArrowUp/Down for navigation, Enter for selection, Tab for focus jumping. */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Tab") {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, -1));
+    } else if (e.key === "Enter") {
+      if (selectedIndex >= 0 && selectedIndex < results.length) {
+        e.preventDefault();
+        pick(results[selectedIndex]);
+      }
+    } else if (e.key === "Escape") {
+      setFocused(false);
+    } else if (e.key === "Tab") {
       // Cancel any pending debounce and fire immediately.
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      // We do NOT call e.preventDefault() — focus must still move on.
-      // Fire-and-forget: the async result is captured via onResult/state.
+      // We do NOT call e.preventDefault() — focus must still move on to the next field.
       void runSearch(query);
     }
   };
@@ -224,9 +243,16 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
     setResolved(item);
     setAmbiguous(false);
     setFocused(false);
-    setQuery(item.label);
-    latestQueryRef.current = item.label;
-    onResult?.(item, item.label);
+
+    // Sync to DOM immediately so handle.getQuery() (used by MultiSmartSearch)
+    // sees the updated value during the same event bubble.
+    if (inputRef.current) {
+      inputRef.current.value = item.key;
+    }
+
+    setQuery(item.key);
+    latestQueryRef.current = item.key;
+    onResult?.(item, item.key);
   };
 
   return (
@@ -277,7 +303,7 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
           <div className="px-2 py-1 text-xs text-muted-foreground">
             Mehrere Treffer – bitte auswählen
           </div>
-          {results.map((r) => (
+          {results.map((r, index) => (
             <button
               key={r.key}
               type="button"
@@ -286,7 +312,10 @@ export const SmartSearch = forwardRef<SmartSearchHandle, SmartSearchProps>(funct
                 e.preventDefault();
                 pick(r);
               }}
-              className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+              className={cn(
+                "flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
+                index === selectedIndex && "bg-accent text-accent-foreground"
+              )}
             >
               <span>{r.label}</span>
               <span className="text-xs text-muted-foreground">{r.key}</span>
